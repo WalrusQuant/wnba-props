@@ -3,10 +3,12 @@
 A build path for a WNBA player prop projection model, designed to be built with a
 coding agent by someone who has never shipped a project.
 
+Repository: [github.com/WalrusQuant/wnba-props](https://github.com/WalrusQuant/wnba-props)
+
 ## Start here
 
 ```bash
-git clone <this repo>
+git clone https://github.com/WalrusQuant/wnba-props.git
 cd wnba-props
 ```
 
