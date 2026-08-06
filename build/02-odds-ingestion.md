@@ -7,9 +7,10 @@
 
 A growing, timestamped archive of prop lines and prices that the user owns.
 
-**This phase is urgent even though the model doesn't exist yet.** Odds data is
-ephemeral and cannot be back-filled. Stats history is always re-fetchable; a price
-snapshot from last Tuesday is gone forever.
+**Start this phase early even though the model doesn't exist yet.** The Odds API
+offers historical odds, but coverage varies by plan, bookmaker, market, and time
+period. It may not have the exact player-prop snapshot you need later, so build
+your own timestamped archive for the markets and books you intend to model.
 
 ## Build
 

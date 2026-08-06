@@ -55,8 +55,9 @@ and the user finds out three weeks later that the archive has a hole in it.
 
 ## Backups
 
-**The odds archive cannot be reconstructed.** Stats data is always re-fetchable; a
-July 14 price snapshot is gone forever if lost.
+**Keep a backup of the odds archive you collect.** Historical odds may be
+available from a provider, but coverage varies by plan, bookmaker, market, and
+time period; do not assume an exact July 14 snapshot can be restored later.
 
 - Weekly database dump plus raw JSON to a location separate from the runner
 - Write `RESTORE.md` with exact rebuild steps

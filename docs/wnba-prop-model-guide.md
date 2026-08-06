@@ -325,9 +325,9 @@ This is the single most valuable habit in a data project. Parsers break constant
 a field gets renamed, a null appears where you expected a number, a player has an
 apostrophe in their name. When that happens you want to fix the parser and re-run
 against data you already have on disk. If you didn't save the raw response, your only
-option is to re-fetch, and some of that data may no longer be available at all. Odds
-data in particular is **ephemeral**: the line that existed at 11:03 AM is gone
-forever at 11:04 unless you saved it.
+option is to re-fetch, and the exact data may not be available on your provider's
+historical endpoint. Historical odds coverage varies by plan, bookmaker, market, and
+time period, so save the snapshots this project relies on.
 
 Name files so they're greppable: `data/raw/odds/2026-08-06T14-30-00Z.json`.
 
@@ -473,8 +473,10 @@ Stop when I can run `python run.py update` twice and see a clean report both tim
 
 **Goal:** a growing archive of prop lines and prices, timestamped, that you own.
 
-This is the part that costs money and the part that cannot be back-filled. Start
-collecting on day one even if your model won't exist for six weeks.
+This is the part that may cost money and should be started early. The Odds API has
+historical odds, but coverage varies by plan, bookmaker, market, and time period.
+Collect the exact snapshots you need from day one rather than assuming they can be
+retrieved later.
 
 ### 6.1 The provider
 
@@ -1526,8 +1528,9 @@ Once you automate, "where does the SQLite file live" becomes a real question.
 
 ### 14.4 Backups
 
-**Your odds archive cannot be reconstructed.** Stats data can always be re-fetched.
-A price snapshot from July 14 is gone forever if you lose it.
+**Back up the odds archive you collect.** A provider may offer historical odds, but
+coverage varies by plan, bookmaker, market, and time period. Do not assume the exact
+July 14 snapshot you captured can be restored later.
 
 Minimum viable backup:
 - Raw JSON responses committed to a separate repository, or synced to cloud storage
