@@ -1,0 +1,13 @@
+.env
+.venv/
+__pycache__/
+*.pyc
+data/raw/
+*.db
+*.db-journal
+logs/*.log
+reports/*.png
+
+# Phase 10 note: automating via GitHub Actions requires committing the database
+# back to the repo. When you get there, add an exception here and record it in
+# DECISIONS.md. See guide §14.3 for size limits.
