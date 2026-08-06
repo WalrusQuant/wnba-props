@@ -35,8 +35,9 @@ to read each phase's output before the next builds on it.
 1. Install [`uv`](https://astral.sh/uv), Git, and [DB Browser for SQLite](https://sqlitebrowser.org).
 2. Read guide §0 through §4. Twenty minutes. It will save you weeks.
 3. If you plan to collect odds data, sign up at **`the-odds-api.com`** (with
-   hyphens — see guide §6.1) and put the key in `.env`. The free tier is enough
-   to develop against.
+   hyphens — see guide §6.1) and put the key in `.env`. The free tier is useful
+   only for a small integration smoke test; plan on paid access or another data
+   source for real player-prop development.
 
 ## Start collecting odds early
 

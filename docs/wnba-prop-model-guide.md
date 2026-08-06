@@ -484,9 +484,11 @@ retrieved later.
 project this size. Around $30/month gets you 20,000 credits, all sports, all
 bookmakers, all betting markets including player props, and access to historical
 odds. There's a free tier at 500 credits/month with no historical access, which is
-enough to develop against but not enough to run daily. They also publish Excel and
-Google Sheets add-ons if you want to poke at the data outside of code, and
-sportsdataverse maintains an R wrapper (`oddsapiR`) for it.
+useful only for a small integration smoke test. It is not enough for real
+player-prop development or daily collection; budget for paid access or choose
+another data source. They also publish Excel and Google Sheets add-ons if you want
+to poke at the data outside of code, and sportsdataverse maintains an R wrapper
+(`oddsapiR`) for it.
 
 **Check the domain carefully.** The Odds API has published a warning that
 `theoddsapi.com` — the same name without hyphens — is an unaffiliated impersonator
@@ -1702,16 +1704,15 @@ edges at real limits are much smaller than backtested ones.
 | Item | Cost |
 |---|---|
 | Stats data (sportsdataverse, stats.wnba.com) | $0 |
-| Odds data (The Odds API, 20K credits) | ~$30/mo |
-| Odds data, development only (free tier, 500 credits) | $0 |
+| Odds data for player-prop development (The Odds API, 20K credits) | ~$30/mo |
 | Hosting — manual or GitHub Actions | $0 |
 | Hosting — small VPS, if you want precise timing | ~$5/mo |
 | Storage | $0 |
 | Coding agent | varies |
 | **Realistic minimum to run daily** | **~$30/mo** |
 
-You can develop the entire model for free on the odds free tier plus a hand-kept log,
-and only start paying when you're capturing daily.
+You can build the stats-only parts without an odds subscription, but meaningful
+player-prop development requires a data source with enough coverage and credits.
 
 ---
 
