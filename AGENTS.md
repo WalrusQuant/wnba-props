@@ -45,8 +45,9 @@ These apply in every phase. Do not restate them back to the user; just follow th
 
 **Data handling**
 - **Write every raw API response to `data/raw/` as JSON before parsing it.**
-  Parsers break; re-fetching is often impossible. Odds data is ephemeral — a
-  price that existed at 11:03 is gone at 11:04.
+  Parsers break; re-fetching is often impossible. Historical odds availability
+  varies by provider, plan, bookmaker, market, and time period, so preserve
+  the snapshots this project needs.
 - Never silently drop a row. If something can't be matched or parsed, keep it
   with a null and a reason code, and report the count.
 - Print before/after row counts at every transformation step.

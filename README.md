@@ -3,8 +3,6 @@
 A build path for a WNBA player prop projection model, designed to be built with a
 coding agent by someone who has never shipped a project.
 
-Repository: [github.com/WalrusQuant/wnba-props](https://github.com/WalrusQuant/wnba-props)
-
 ## Start here
 
 ```bash
@@ -40,11 +38,12 @@ to read each phase's output before the next builds on it.
    hyphens — see guide §6.1) and put the key in `.env`. The free tier is enough
    to develop against.
 
-## The one thing that can't wait
+## Start collecting odds early
 
-Odds data is ephemeral and cannot be back-filled. Stats history is always
-re-fetchable; a price snapshot from last Tuesday is gone forever. Get phase 2
-running early even if the model won't exist for two months.
+The Odds API offers historical odds, but coverage depends on the plan, sport,
+bookmaker, market, and time period. It may not provide the exact player-prop
+snapshot you need later. If you want a complete archive for your specific
+markets and books, begin collecting and saving snapshots early.
 
 ## Expectations
 
