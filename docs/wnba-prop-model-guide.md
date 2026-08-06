@@ -183,11 +183,10 @@ where players were doing something else entirely.
 Season-over-season carryover of conditioning and form is messier than in the NBA, and
 some players arrive late or manage load.
 
-**Markets are thinner.** Fewer books post WNBA props, they post them later, limits are
-lower, and lines move more slowly and less efficiently than NBA lines. This is
-genuinely where a small modeler's opportunity lives — and also where you'll find
-stale, wide, and occasionally erroneous lines that make your backtest look brilliant
-and are unbettable at any size.
+**Markets are thinner.** Fewer books post WNBA props, they often post them later, and
+limits can be lower than NBA markets. That does not prove they are inefficient. It
+does mean sparse, stale, wide, and occasionally erroneous lines can make a backtest
+look brilliant while being unavailable or unbettable at any meaningful size.
 
 ---
 
@@ -876,8 +875,11 @@ then the minutes.
 
 ### 9.2 The sum constraint — use it
 
-Team minutes must total exactly 200 (plus 25 per overtime period). This is free
-information and most naive models throw it away, producing rosters that sum to 214.
+Team minutes must total exactly 200 in regulation. This is free information and most
+naive models throw it away, producing rosters that sum to 214. If the model prices
+props that include overtime, first simulate a game-level overtime event, then add 25
+team-minutes for each simulated overtime period; do not add overtime to every pregame
+simulation.
 
 The clean approach: model **minutes share** rather than raw minutes.
 
@@ -946,8 +948,9 @@ Two-stage:
   2. continuous distribution for minutes | plays, on (0, 40]
 
 Model minutes SHARE, not raw minutes. Sample a share vector per team-game from a
-Dirichlet over active players, then multiply by 200 (+25 per overtime period). This
-must guarantee team minutes sum correctly in every simulation. Assert it in a test.
+Dirichlet over active players, then multiply by 200 in regulation. If you have an
+explicit game-level overtime model, add 25 per simulated overtime period. Assert the
+team-minute total in every simulation.
 
 Note: WNBA games are 40 minutes, so a team plays 200 player-minutes, not 240.
 Do not use per-36 conventions anywhere.
@@ -1145,7 +1148,8 @@ Combos, alternate lines, and correlated same-game questions all fall out for fre
 ### 11.4 Sanity checks
 
 - Simulated team points should roughly match the game total line, if you have one
-- Simulated team minutes always sum to 200 (+25/OT)
+- Simulated team minutes sum to 200 in regulation; add 25 only after an explicit
+  simulated overtime event
 - Simulated player rebounds summed across both teams should be near the realistic
   team rebound range, not double it
 - Simulated distributions for known players should look like their actual game logs —
@@ -1172,7 +1176,8 @@ Vectorize with numpy across the whole slate. Set and store a random seed.
 Store per player: percentiles at 1-unit intervals, mean, sd — not the raw draws.
 
 Sanity checks, printed every run:
-  team minutes sum to 200 (+25 per OT) in every simulation
+  team minutes sum to 200 in regulation; add 25 only after an explicit simulated
+    overtime event
   simulated team points vs. the posted game total, if available
   for 5 named players I pick, overlay the simulated distribution against their
     actual season game log and save the plot to reports/
@@ -1695,7 +1700,8 @@ edges at real limits are much smaller than backtested ones.
 **Silent automation failure.** Three weeks of missing snapshots discovered too late.
 *Fix:* the staleness check.
 
-**Lost odds archive.** Unrecoverable. *Fix:* verified backups.
+**Lost odds archive.** Your exact captured snapshots may not be recoverable from a
+provider later, even when historical odds exist. *Fix:* verified backups.
 
 ---
 
@@ -1735,9 +1741,10 @@ alongside an agent:
 | 12–14 | Evaluation, calibration, baselines (§13) |
 | 14+ | Automation (§14) — only if §13 went well |
 
-**The critical path is odds capture.** Everything else can be built later against
-history. Odds cannot. If you take one thing from this document: start snapshotting
-lines before you write any model code.
+**The critical path is odds capture.** You can often obtain some historical odds, but
+coverage varies by plan, bookmaker, market, and timestamp. Your own snapshots are the
+reliable archive for the exact lines and books you intend to evaluate. Start
+snapshotting those lines before you write any model code.
 
 ---
 

@@ -52,7 +52,8 @@ Combos, alternate lines, and correlated same-game questions all come free.
 
 ## Sanity checks, printed every run
 
-- Team minutes sum to 200 (+25/OT) in **every** simulation
+- Team minutes sum to 200 in regulation; add 25 only after an explicit simulated
+  overtime event
 - Simulated team points against the posted game total, if available
 - Simulated team rebounds land in a realistic range, not double it
 - **For 5 players the user names, overlay the simulated distribution against that
