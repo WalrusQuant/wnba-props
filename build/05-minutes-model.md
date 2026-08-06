@@ -26,9 +26,10 @@ P(minutes | plays)  -> continuous on (0, 40]
 In simulation, draw the coin flip first, then the minutes.
 
 **Model minutes SHARE, not raw minutes.** Team minutes must total exactly 200 —
-WNBA games are 40 minutes, not 48 — plus 25 per overtime period. This constraint
+WNBA games are 40 minutes, not 48: 200 team-minutes in regulation. This constraint
 is free information and naive models throw it away, producing rosters that sum to
-214.
+214. If pricing props that include overtime, simulate a game-level overtime event
+first, then add 25 team-minutes for each simulated overtime period.
 
 ```
 per team-game:
@@ -77,7 +78,8 @@ a real result and a fantasy. Phase 10 adds a manual `today_out.csv` override.
 - **Coverage of 50/80/95% intervals — report all three.** Calibrated at 50% but
   not 95% means tail problems, and props live in the tails.
 - Log loss and calibration plot for the DNP classifier
-- A test asserting simulated team minutes always sum to 200 (+25/OT)
+- A test asserting simulated team minutes sum to 200 in regulation; add 25 only
+  after an explicit simulated overtime event
 - **Side-by-side comparison against two baselines:** trailing-5-game mean minutes,
   and last game's minutes
 

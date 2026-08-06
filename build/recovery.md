@@ -95,5 +95,6 @@ that matters.
 - GitHub disables scheduled workflows after 60 days of repo inactivity
 - Check whether failure notification was ever configured
 - Check the staleness alert from phase 10 fired and was missed
-- Gaps in the odds archive are **permanent**. Note the affected dates in
-  `DECISIONS.md` so phase 9's evaluation accounts for them.
+- Gaps in the odds archive may be fillable from a historical provider, but exact
+  coverage depends on plan, bookmaker, market, and timestamp. Note the affected dates
+  in `DECISIONS.md` so phase 9's evaluation accounts for them.
