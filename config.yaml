@@ -1,2 +1,20 @@
 # Every tunable number in this project lives here. No magic numbers in code.
 season: 2026
+
+stats:
+  # Earliest season to backfill. sportsdataverse-data's WNBA release assets go
+  # back to 2002; historical seasons are immutable once ingested and are
+  # skipped on later `update` runs, so pulling the full history costs little.
+  history_start_season: 2002
+  # Published regular-season game count per team, for the schedule-integrity
+  # check. Real schedules can deviate (see DECISIONS.md) — the check reports
+  # exact per-team deltas rather than hard-failing on mismatch.
+  expected_games_per_team: 44
+  # NBA-derived approximation of what fraction of FTA end a possession.
+  # POSS = FGA - OREB + TOV + possession_fta_coefficient * FTA. See DECISIONS.md.
+  possession_fta_coefficient: 0.44
+  # Allowed slack (in minutes) on the team-minutes-per-game check before a
+  # team-game is reported as a specific failing row. Box scores round each
+  # player's minutes to a whole number, so +/-1-3 minutes of drift per game
+  # is normal rounding noise, not a dropped player.
+  team_minutes_tolerance: 5

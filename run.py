@@ -13,7 +13,6 @@ log = get_logger(__name__)
 
 # Command -> phase that implements it, for the not-implemented message.
 NOT_IMPLEMENTED = {
-    "update": 1,
     "clean": 3,
     "train": 5,
     "project": 7,
@@ -50,6 +49,12 @@ def main() -> int:
 
     if args.command is None:
         parser.print_help()
+        return 0
+
+    if args.command == "update":
+        from src.ingest_stats import run_update
+
+        run_update()
         return 0
 
     _not_implemented(args.command)
