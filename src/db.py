@@ -100,7 +100,33 @@ CREATE TABLE IF NOT EXISTS scheduled_games (
     game_id INTEGER NOT NULL,
     season INTEGER NOT NULL,
     team_id INTEGER NOT NULL,
+    game_date TEXT,
     PRIMARY KEY (game_id, team_id)
+);
+
+-- Every prop-line snapshot ever captured. Never updated in place -- this is
+-- a time series and its value is in the movement, so a re-observed line gets
+-- a brand new row, not an overwrite. game_id is the-odds-api's own event id
+-- (opaque to us); the join to our internal games/player_games happens in
+-- phase 3 on (player, date), not on game_id directly.
+CREATE TABLE IF NOT EXISTS odds_snapshots (
+    snapshot_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    captured_at_utc TEXT NOT NULL,
+    game_id TEXT NOT NULL,
+    commence_time_utc TEXT,
+    home_team_raw TEXT,
+    away_team_raw TEXT,
+    book TEXT NOT NULL,
+    market TEXT NOT NULL,
+    player_name_raw TEXT NOT NULL,
+    line REAL,
+    over_price REAL,
+    under_price REAL,
+    is_alternate INTEGER NOT NULL DEFAULT 0,
+    -- Lets --dry-run re-parse the same raw file repeatedly (while developing
+    -- the parser) without piling up duplicate rows: re-deriving the same
+    -- observation from the same raw response is a no-op, not a new snapshot.
+    UNIQUE (captured_at_utc, game_id, book, market, player_name_raw, line, is_alternate)
 );
 
 -- Bookkeeping for idempotent ingestion: which seasons are fully backfilled

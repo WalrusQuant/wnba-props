@@ -5,5 +5,14 @@ description = "WNBA player prop projection model"
 requires-python = ">=3.11"
 dependencies = [
     "pyarrow>=25.0.0",
+    "python-dotenv>=1.2.2",
     "pyyaml>=6.0.3",
 ]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]

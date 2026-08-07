@@ -148,14 +148,14 @@ def _ingest_season(conn: sqlite3.Connection, season: int, coef: float) -> dict:
             r.get("away_color"), r.get("away_alternate_color"),
         )
         conn.execute(
-            "INSERT INTO scheduled_games (game_id, season, team_id) VALUES (?, ?, ?) "
-            "ON CONFLICT(game_id, team_id) DO NOTHING",
-            (r["id"], season, r["home_id"]),
+            "INSERT INTO scheduled_games (game_id, season, team_id, game_date) VALUES (?, ?, ?, ?) "
+            "ON CONFLICT(game_id, team_id) DO UPDATE SET game_date = excluded.game_date",
+            (r["id"], season, r["home_id"], str(r.get("game_date"))),
         )
         conn.execute(
-            "INSERT INTO scheduled_games (game_id, season, team_id) VALUES (?, ?, ?) "
-            "ON CONFLICT(game_id, team_id) DO NOTHING",
-            (r["id"], season, r["away_id"]),
+            "INSERT INTO scheduled_games (game_id, season, team_id, game_date) VALUES (?, ?, ?, ?) "
+            "ON CONFLICT(game_id, team_id) DO UPDATE SET game_date = excluded.game_date",
+            (r["id"], season, r["away_id"], str(r.get("game_date"))),
         )
 
     for r in completed:

@@ -33,7 +33,12 @@ def build_parser() -> argparse.ArgumentParser:
     )
     subparsers = parser.add_subparsers(dest="command")
 
-    subparsers.add_parser("update", help="fetch new games and odds since last run")
+    update_parser = subparsers.add_parser("update", help="fetch new games and odds since last run")
+    update_parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="re-parse the most recently saved raw odds response instead of calling the API",
+    )
     subparsers.add_parser("clean", help="rebuild clean tables from raw")
     subparsers.add_parser("train", help="fit models, save to disk")
     subparsers.add_parser("project", help="today's slate -> console + CSV")
@@ -52,9 +57,12 @@ def main() -> int:
         return 0
 
     if args.command == "update":
+        from src.ingest_odds import run_odds_update
         from src.ingest_stats import run_update
 
-        run_update()
+        if not args.dry_run:
+            run_update()
+        run_odds_update(dry_run=args.dry_run)
         return 0
 
     _not_implemented(args.command)

@@ -237,3 +237,80 @@ the WNBA's inaugural 2002 season, not a parsing defect.
 **Revisit if:** A phase 4+ feature needs guaranteed box-score coverage for a
 specific season — filter these game_ids out explicitly rather than relying on
 their absence from `player_games` to do it implicitly.
+
+## 2026-08-07 — the-odds-api.com is also blocked from this sandbox; phase 2 could not be live-verified
+**Decided:** Built the full odds ingestion pipeline (`src/odds_client.py`,
+`src/ingest_odds.py`, `odds_snapshots` table) exactly to spec, but could not
+run it against real data from this environment and did not fake a passing
+result.
+**Why:** Same network policy that blocked `stats.wnba.com`/ESPN in phase 1
+also blocks `api.the-odds-api.com` and `the-odds-api.com` (confirmed 403
+policy denial at the egress proxy). Separately, no `ODDS_API_KEY` is
+configured — signing up is something only the user can do. Both together
+mean phase 2's core DoD item ("a snapshot lands in odds_snapshots with a real
+UTC timestamp") cannot be satisfied here, live, no matter how the code is
+written. Verified everything that *can* be verified without a live call:
+  - Parser correctness: 5 unit tests in `tests/test_ingest_odds.py` against a
+    synthetic fixture shaped like a real event-odds response (Over/Under
+    pairing, alternate-market flagging, unconfigured-market filtering,
+    zero-bookmakers events, multiple books for one player/market).
+  - `--dry-run` end-to-end: placed one synthetic raw file, ran `--dry-run`
+    twice, confirmed it parses, inserts via the real DB path, and is
+    idempotent (0 new rows the second time, via the new UNIQUE constraint on
+    `odds_snapshots`) — then deleted the synthetic file and reset the table
+    so no fake data is left in `data/raw/` or `data/wnba.db`.
+  - The top-level network-failure path *for real*: with a placeholder key in
+    `.env`, `python run.py update` hit the actual proxy-level connection
+    rejection to `api.the-odds-api.com`, logged a clean one-line error citing
+    only the endpoint path (never the URL or key), and exited 0 — no
+    traceback. Confirmed the key never appears in any log file.
+  - The no-key path: with no `.env`, prints a helpful message and skips odds
+    ingestion without crashing (stats ingestion still runs normally).
+  - Not verified: quota-header parsing (`x-requests-remaining` etc.) against
+    a real response, and the credit-projection math against real quota
+    numbers — implemented per the API's documented header contract and
+    reviewed by inspection, but no live response was ever reachable to parse.
+**Alternatives:** Fabricate a fully "real-looking" end-to-end run to mark the
+phase cleanly complete. Rejected outright — this project's entire premise is
+that a model which *appears* to work because of faked/leaked/synthetic data
+is the one failure mode worth avoiding (see README "Expectations" and guide
+§0/§13.6). A fake green checkmark here would be exactly that, one phase
+earlier than the guide worries about it.
+**Revisit if:** This environment's network policy changes to allow
+`the-odds-api.com`, or the user runs `python run.py update` themselves
+somewhere unrestricted with a real key in `.env` — either way, phase 2's
+"Stop" step (print the snapshot summary and quota, wait for the user) still
+needs to happen against real output before this phase is marked complete in
+`PROGRESS.md`.
+
+## 2026-08-07 — Odds ingestion design choices
+**Decided, bundled (all in `src/ingest_odds.py` / `src/odds_client.py` /
+`config.yaml`'s `odds:` section):**
+- **"Today's slate"** is computed in US/Eastern (`zoneinfo`), not UTC —
+  matches how the WNBA schedules games and avoids a late-evening ET game
+  landing on the wrong UTC calendar date.
+- **`--dry-run` fully skips the stats half of `update` too**, not just odds —
+  the DoD says dry-run should mean "without network access," and stats
+  ingestion is also a network call (to a different, unrestricted host); the
+  strict reading is safer and keeps the flag's meaning unambiguous.
+- **`--dry-run` writes to `odds_snapshots`, not just a preview** — the
+  UNIQUE constraint added to the table (`captured_at_utc, game_id, book,
+  market, player_name_raw, line, is_alternate`) makes repeated dry-runs over
+  the same raw file idempotent, so this doesn't risk duplicate/inflated data;
+  and writing for real is more useful for developing phase 3's join against
+  actual `odds_snapshots` rows.
+- **Credit projection uses real season data, not the guide's example
+  numbers.** `scheduled_games` (phase 1) now also stores `game_date` for
+  every scheduled game, played or not, so the projection is `cost_per_call x
+  (scheduled games this season / days spanning them) x snapshots_per_day x
+  30` — a real average, not the guide's illustrative "~7 games."
+- **Price format defaults to American odds** (`odds.price_format:
+  american`), matching what US books display, over decimal.
+- **Added `pytest` as a dev dependency** (`uv add --dev pytest`, `[tool.
+  pytest.ini_options] pythonpath = ["."]` in `pyproject.toml`) — justified
+  because this phase's correctness could only be checked by unit-testing the
+  parser against a fixture, not by a live run; the standing rules also
+  anticipate a leakage test existing by phase 4 ("enforced by a test, not by
+  discipline"), so this dependency was coming regardless.
+**Revisit if:** none of these are expected to need revisiting on their own;
+each is independently reversible if it turns out wrong once real data flows.

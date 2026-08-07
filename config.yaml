@@ -18,3 +18,24 @@ stats:
   # player's minutes to a whole number, so +/-1-3 minutes of drift per game
   # is normal rounding noise, not a dropped player.
   team_minutes_tolerance: 5
+
+odds:
+  # The Odds API sport key for the WNBA.
+  sport_key: basketball_wnba
+  # Start with one market -- debugging five at once when the join breaks is
+  # miserable. Player props are billed per (market x region) on the
+  # event-odds endpoint, so this list also drives the credit-cost estimate.
+  markets:
+    - player_points
+  # Bookmaker region(s) to query. "us" covers the major US-facing books.
+  regions:
+    - us
+  # American (integer, e.g. -110/+120) or decimal odds. Pick one and store
+  # consistently -- decimal is unambiguous for later de-vigging math, but
+  # American is what US books display, so it's easier to sanity-check by eye.
+  price_format: american
+  # How many snapshots per day the capture cadence targets: line open,
+  # midday, ~1hr before tip, and closing (as close to tip as possible). Only
+  # used for the monthly credit projection in phase 2; phase 10 is what
+  # actually schedules these.
+  snapshots_per_day: 4

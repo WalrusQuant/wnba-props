@@ -9,7 +9,7 @@ has seen the output.
 |---|---|---|---|
 | 0 | Environment and scaffold | `build/00-setup.md` | ✅ complete |
 | 1 | Stats ingestion | `build/01-stats-ingestion.md` | ✅ complete |
-| 2 | Odds ingestion | `build/02-odds-ingestion.md` | ⬜ not started |
+| 2 | Odds ingestion | `build/02-odds-ingestion.md` | 🟡 built, not live-verified (see phase log) |
 | 3 | Cleaning and joining | `build/03-cleaning-joining.md` | ⬜ not started |
 | 4 | Features | `build/04-features.md` | ⬜ not started |
 | 5 | Minutes model | `build/05-minutes-model.md` | ⬜ not started |
@@ -151,3 +151,69 @@ per the spec's literal wording.
 - `sportsdataverse-data`'s refresh cadence isn't verified to be same-day —
   worth checking before phase 10 automation relies on it for
   next-morning-after-games freshness.
+
+### Phase 2 — Odds ingestion (2026-08-07) — built, NOT marked complete
+
+**Read this before treating phase 2 as done: it isn't yet, and can't be from
+here.** Two independent blockers, both explained in full in `DECISIONS.md`:
+
+1. This sandbox's network policy blocks `api.the-odds-api.com` /
+   `the-odds-api.com` outright (same 403 policy denial as `stats.wnba.com`
+   in phase 1) — confirmed via the proxy's own status endpoint, not something
+   to retry around.
+2. No `ODDS_API_KEY` is set — signing up at `the-odds-api.com` (with hyphens)
+   is a step only you can do.
+
+Rather than fake a passing run, I built everything and verified every piece
+that *can* be verified without a live call, and left the rest honestly
+unverified. **Do not treat this as "phase 2 complete."**
+
+**Built:** `src/odds_client.py` (The Odds API client: lists events, fetches
+one event's player-prop odds, saves the raw response before parsing, never
+lets the API key reach a log line or a saved file), `src/ingest_odds.py`
+(orchestrates the run, classifies today's slate in US/Eastern time, parses
+Over/Under pairs into rows, handles every error case the spec lists without
+crashing, prints the snapshot summary and quota), `odds_snapshots` table
+(never updated in place, one row per observed line, with a UNIQUE constraint
+so re-parsing the same raw file is idempotent), `--dry-run` flag on
+`python run.py update`, `tests/test_ingest_odds.py` (5 unit tests against a
+synthetic fixture — added `pytest` as a dev dependency, justified in
+`DECISIONS.md`). `config.yaml` gained an `odds:` section (sport key, markets,
+regions, price format, snapshot cadence).
+
+**What was actually verified, for real, in this environment:**
+- No-key path: `python run.py update` with no `.env` prints a helpful
+  message and skips odds ingestion cleanly; stats ingestion still runs.
+- Network-failure path, genuinely triggered (not simulated): with a
+  placeholder key, `python run.py update` hit the real proxy rejection of
+  `api.the-odds-api.com`, logged one clean line naming only the endpoint
+  path, and exited 0 — no traceback, and the key never appeared in any log
+  file (grepped to confirm).
+- Parser correctness: all 5 tests in `tests/test_ingest_odds.py` pass —
+  Over/Under pairing into one row, alternate-market flagging, an
+  unconfigured market at a book correctly dropped, an event with no
+  bookmakers yielding zero rows (not an error), multiple books for the same
+  player/market all kept.
+- `--dry-run` end-to-end: placed one synthetic raw file (clearly fake,
+  labeled, and deleted afterward), ran `--dry-run` twice — first run parsed
+  and inserted 1 row into `odds_snapshots` with the raw file's original
+  timestamp preserved; second run inserted 0 (idempotent, via the UNIQUE
+  constraint). Cleaned up afterward: `data/raw/odds/` and `odds_snapshots`
+  are both empty again in the committed state.
+
+**Not verified (can't be, from here):** quota-header parsing
+(`x-requests-remaining` etc.) against a real HTTP response, and the
+credit-projection arithmetic against real quota numbers — the code follows
+the API's documented header contract and was reviewed by inspection, but no
+live response was ever reachable.
+
+**To actually finish this phase,** one of:
+- Run `python run.py update` yourself, somewhere without this sandbox's
+  network restrictions, after copying `.env.example` to `.env` and adding
+  your real `ODDS_API_KEY`; or
+- Grant this environment network access to `the-odds-api.com` and I'll run
+  it here.
+
+Either way, once a real snapshot lands, I'll print the actual snapshot
+summary and quota per the spec's "Stop" instruction, and only then mark this
+row ✅ in the table above.
