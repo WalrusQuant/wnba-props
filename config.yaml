@@ -1,0 +1,2 @@
+# Every tunable number in this project lives here. No magic numbers in code.
+season: 2026

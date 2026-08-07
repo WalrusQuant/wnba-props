@@ -1,0 +1,6 @@
+[project]
+name = "wnba-props"
+version = "0.1.0"
+description = "WNBA player prop projection model"
+requires-python = ">=3.11"
+dependencies = []
