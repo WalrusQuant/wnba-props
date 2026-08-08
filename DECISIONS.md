@@ -314,3 +314,35 @@ needs to happen against real output before this phase is marked complete in
   discipline"), so this dependency was coming regardless.
 **Revisit if:** none of these are expected to need revisiting on their own;
 each is independently reversible if it turns out wrong once real data flows.
+
+## 2026-08-08 — Phase 2 live-verified: network unblocked, real key provided
+**Decided:** The prior entry ("the-odds-api.com is also blocked... could not
+be live-verified") is now resolved, not reversed — recorded as its own entry
+rather than editing the old one, per this file's append-only rule.
+**What changed:** The user changed this environment's network policy to
+allow `the-odds-api.com` (confirmed: `api.the-odds-api.com` went from a
+403 proxy-level policy denial to a real `401 Unauthorized` from the API
+itself once reachable) and provided a real `ODDS_API_KEY`, which was written
+directly to `.env` via a file edit and never printed, logged, or echoed back
+in any tool output.
+**Verified with real data:** `python run.py update` produced 19
+`odds_snapshots` rows for tonight's Dallas Wings @ Golden State Valkyries
+game (`player_points`, DraftKings + FanDuel), correctly excluded tomorrow's
+Lynx @ Aces game via the US/Eastern slate filter, and printed real quota
+(19999 -> 19998 remaining) and a real projected-usage figure (~285
+credits/month at the configured cadence). Running `update` again correctly
+added 38 total rows (not deduped) since each live capture is a new market
+observation, not a repeat of prior work — confirmed this is the intended
+semantic difference from phase 1's stats idempotency (immutable facts vs. a
+time series). `--dry-run` against the real raw files it just saved correctly
+made zero network calls and found zero new rows (already inserted by the
+live run under the same `captured_at_utc`). Grepped the full repo for the
+literal key string afterward: found only in `.env`.
+**Security note:** the key was pasted directly into the chat to unblock
+quickly, which guide §3.4 explicitly warns against ("never paste one into a
+chat with your agent") because chat transcripts can persist outside this
+project's control even though the code itself never logs/prints/commits it.
+Recommended the user rotate the key at their convenience; not a code defect,
+nothing to fix in the pipeline.
+**Revisit if:** the key is rotated — no code change needed, just update
+`.env` with the new value.

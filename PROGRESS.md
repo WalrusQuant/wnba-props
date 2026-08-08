@@ -9,7 +9,7 @@ has seen the output.
 |---|---|---|---|
 | 0 | Environment and scaffold | `build/00-setup.md` | ✅ complete |
 | 1 | Stats ingestion | `build/01-stats-ingestion.md` | ✅ complete |
-| 2 | Odds ingestion | `build/02-odds-ingestion.md` | 🟡 built, not live-verified (see phase log) |
+| 2 | Odds ingestion | `build/02-odds-ingestion.md` | ✅ complete |
 | 3 | Cleaning and joining | `build/03-cleaning-joining.md` | ⬜ not started |
 | 4 | Features | `build/04-features.md` | ⬜ not started |
 | 5 | Minutes model | `build/05-minutes-model.md` | ⬜ not started |
@@ -152,68 +152,67 @@ per the spec's literal wording.
   worth checking before phase 10 automation relies on it for
   next-morning-after-games freshness.
 
-### Phase 2 — Odds ingestion (2026-08-07) — built, NOT marked complete
+### Phase 2 — Odds ingestion (2026-08-07/08)
 
-**Read this before treating phase 2 as done: it isn't yet, and can't be from
-here.** Two independent blockers, both explained in full in `DECISIONS.md`:
+Built against The Odds API's per-event odds endpoint: `src/odds_client.py`
+(lists events, fetches one event's player-prop odds, saves the raw response
+before parsing, never lets the API key reach a log line or a saved file),
+`src/ingest_odds.py` (orchestrates the run, classifies today's slate in
+US/Eastern time, parses Over/Under pairs into rows, handles every error case
+the spec lists without crashing, prints the snapshot summary and quota),
+`odds_snapshots` table (never updated in place, one row per observed line,
+UNIQUE-constrained so re-parsing a raw file is idempotent), `--dry-run` flag
+on `python run.py update`, `tests/test_ingest_odds.py` (5 unit tests against
+a synthetic fixture, `pytest` added as a dev dependency). `config.yaml`
+gained an `odds:` section (sport key, markets, regions, price format,
+snapshot cadence).
 
-1. This sandbox's network policy blocks `api.the-odds-api.com` /
-   `the-odds-api.com` outright (same 403 policy denial as `stats.wnba.com`
-   in phase 1) — confirmed via the proxy's own status endpoint, not something
-   to retry around.
-2. No `ODDS_API_KEY` is set — signing up at `the-odds-api.com` (with hyphens)
-   is a step only you can do.
+**Initially blocked, then live-verified.** This sandbox's network policy
+blocked `api.the-odds-api.com` the same way it blocked `stats.wnba.com` in
+phase 1, and no `ODDS_API_KEY` was set. Rather than fake a passing run, first
+verified everything possible without a live call (5 parser unit tests, the
+no-key path failing helpfully, the network-failure path triggered for real
+against the actual proxy rejection with a clean exit and no key ever logged,
+and `--dry-run`'s full parse-insert-idempotency path against a synthetic
+fixture that was deleted afterward). The user then granted this environment
+network access and provided a real `ODDS_API_KEY`, written straight to
+`.env` and never echoed elsewhere. Full detail and the key-rotation note in
+`DECISIONS.md`.
 
-Rather than fake a passing run, I built everything and verified every piece
-that *can* be verified without a live call, and left the rest honestly
-unverified. **Do not treat this as "phase 2 complete."**
+**DoD checks, now genuinely verified against real data:**
+- `python run.py update` produced a real snapshot: 19 rows landed in
+  `odds_snapshots` for tonight's Dallas Wings @ Golden State Valkyries game
+  (event `1abfa68590506baafec863ada56d863d`), `player_points` market,
+  DraftKings and FanDuel, `captured_at_utc = 2026-08-08T02-45-06Z`. The
+  US/Eastern slate filter correctly included only tonight's game and
+  excluded tomorrow's Lynx @ Aces game (1pm ET tomorrow, but technically
+  "today" in UTC) — confirms the timezone choice in `DECISIONS.md` was right.
+- Ran `update` a second time: correctly inserted 19 *more* rows (0->19->38)
+  with a new `captured_at_utc` rather than deduping — this is intentional
+  and different from phase 1's idempotency: odds are a time series where
+  re-observing the market is new information, not a repeat of old work.
+- `--dry-run` against the real captured raw files: re-parsed without any
+  network call, correctly found 0 new rows (the live run's own data was
+  already in `odds_snapshots` under the same timestamp), and printed
+  "no quota data (dry-run: no network call was made)".
+- Quota printed for real: `remaining: 19999 -> 19998`, `used: 1 -> 2`,
+  `cost of last call: 1`. Projected monthly usage: **~285 credits/month** at
+  1 market x 1 region x 4 snapshots/day x the season's real average of 2.4
+  games/day (332 scheduled games over 140 days) — comfortably inside even
+  the free tier's headroom for testing, let alone a paid plan.
+- Confirmed the API key never appears anywhere except `.env`: grepped the
+  entire repo (excluding `.git`) for the literal key string after the run.
 
-**Built:** `src/odds_client.py` (The Odds API client: lists events, fetches
-one event's player-prop odds, saves the raw response before parsing, never
-lets the API key reach a log line or a saved file), `src/ingest_odds.py`
-(orchestrates the run, classifies today's slate in US/Eastern time, parses
-Over/Under pairs into rows, handles every error case the spec lists without
-crashing, prints the snapshot summary and quota), `odds_snapshots` table
-(never updated in place, one row per observed line, with a UNIQUE constraint
-so re-parsing the same raw file is idempotent), `--dry-run` flag on
-`python run.py update`, `tests/test_ingest_odds.py` (5 unit tests against a
-synthetic fixture — added `pytest` as a dev dependency, justified in
-`DECISIONS.md`). `config.yaml` gained an `odds:` section (sport key, markets,
-regions, price format, snapshot cadence).
+Nothing unresolved for this phase specifically. The single-game slate
+tonight (Aug 7 ET) didn't exercise the multi-game "no games with no props
+posted" or "book missing a market" paths live, but those are covered by the
+unit tests and by code review (both are just an empty/missing key in the
+response, handled identically to what's already exercised).
 
-**What was actually verified, for real, in this environment:**
-- No-key path: `python run.py update` with no `.env` prints a helpful
-  message and skips odds ingestion cleanly; stats ingestion still runs.
-- Network-failure path, genuinely triggered (not simulated): with a
-  placeholder key, `python run.py update` hit the real proxy rejection of
-  `api.the-odds-api.com`, logged one clean line naming only the endpoint
-  path, and exited 0 — no traceback, and the key never appeared in any log
-  file (grepped to confirm).
-- Parser correctness: all 5 tests in `tests/test_ingest_odds.py` pass —
-  Over/Under pairing into one row, alternate-market flagging, an
-  unconfigured market at a book correctly dropped, an event with no
-  bookmakers yielding zero rows (not an error), multiple books for the same
-  player/market all kept.
-- `--dry-run` end-to-end: placed one synthetic raw file (clearly fake,
-  labeled, and deleted afterward), ran `--dry-run` twice — first run parsed
-  and inserted 1 row into `odds_snapshots` with the raw file's original
-  timestamp preserved; second run inserted 0 (idempotent, via the UNIQUE
-  constraint). Cleaned up afterward: `data/raw/odds/` and `odds_snapshots`
-  are both empty again in the committed state.
-
-**Not verified (can't be, from here):** quota-header parsing
-(`x-requests-remaining` etc.) against a real HTTP response, and the
-credit-projection arithmetic against real quota numbers — the code follows
-the API's documented header contract and was reviewed by inspection, but no
-live response was ever reachable.
-
-**To actually finish this phase,** one of:
-- Run `python run.py update` yourself, somewhere without this sandbox's
-  network restrictions, after copying `.env.example` to `.env` and adding
-  your real `ODDS_API_KEY`; or
-- Grant this environment network access to `the-odds-api.com` and I'll run
-  it here.
-
-Either way, once a real snapshot lands, I'll print the actual snapshot
-summary and quota per the spec's "Stop" instruction, and only then mark this
-row ✅ in the table above.
+**Security note, not a code issue:** the API key was pasted directly into
+this chat to get unblocked quickly. The guide (§3.4) is explicit that a key
+should never be pasted into a chat with an agent, precisely because chat
+transcripts can persist outside your control even though this project's own
+code never logs, prints, or commits it. Recommend rotating this key at
+the-odds-api.com's dashboard when convenient, and using `.env` directly (or
+pasting into a tool call the assistant can't echo back) next time.
